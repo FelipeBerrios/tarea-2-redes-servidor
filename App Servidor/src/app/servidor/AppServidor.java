@@ -25,6 +25,7 @@ public class AppServidor {
     private static int port = 1001; /* port to listen on */
  
     public static void main (String[] args) throws IOException {
+        
         try{
         
             String basePath = new File("").getAbsolutePath();
@@ -98,68 +99,176 @@ class ChatServerProtocol {
     private String nick;
     private ClientConn conn;
  
-    
- 
-    private static final String msg_OK = "OK";
-    private static final String msg_NICK_IN_USE = "NICK IN USE";
-    private static final String msg_SPECIFY_NICK = "SPECIFY NICK";
-    private static final String msg_INVALID = "MSG INVALIDO";
-    private static final String msg_SEND_FAILED = "FALLO ENVIO";
- 
- 
-    
- 
-    public ChatServerProtocol(ClientConn c) {
+   public ChatServerProtocol(ClientConn c) {
     conn=c;
     }
-    private void ClienteSolicitaMensajes(String IP_enviar,String Nick) throws IOException  {
+    private String  ClienteSolicitaMensajes(String IP_enviar,String Nick) {
+        String mismensajes="MISMSG ";
         try{
             if(NickesIP(IP_enviar,Nick)){
+                
                 FileReader fr = new FileReader ("mensajes.txt");
                 BufferedReader br = new BufferedReader(fr);
+                FileWriter archivoMensajes;
+                PrintWriter pw ;
+                archivoMensajes = new FileWriter("temp.txt",true);
+                pw = new PrintWriter(archivoMensajes);
                 String linea;
                 //Variables utilizadas para la separación del String
                 StringTokenizer aux1;
                 String aux2;
                 //Variables utilizadas para guardar campos.
+                String msg;
                 String IP_d;
                 String IP_f;
                 String mensaje;
-                String Destinatario;
-
+                String nickf;
+                String nickd;
+                String estado;
 
                 while ((linea=br.readLine())!=null){
                     aux1=new StringTokenizer(linea,"&&");
-                    aux2= aux1.nextToken();
+                    msg= aux1.nextToken();
                     aux2=aux1.nextToken();
                     if (aux2.equals(IP_enviar)){
                         IP_d=aux2;
                         IP_f=aux1.nextToken();
+                        nickf=aux1.nextToken();
+                        nickd=aux1.nextToken();
                         mensaje=aux1.nextToken();
-                        if(aux1.nextToken().equals(Nick))
-                            EnviarACliente(IP_d,IP_f,mensaje,aux1.nextToken());    
+                        estado=aux1.nextToken();
+                        if(nickd.equals(Nick)){
+                            if(estado.equals("NO")){
+                                System.out.println("entre");
+                                pw.println(msg+"&&"+IP_d+"&&"+IP_f+"&&"+nickf+"&&"+nickd+"&&"+mensaje+"&&"+"SI");
+                                
+                                mismensajes+=nickf+"("+IP_f+"): "+ mensaje+"&&";
+                            }
+                            else{
+                               pw.println(msg+"&&"+IP_d+"&&"+IP_f+"&&"+nickf+"&&"+nickd+"&&"+mensaje+"&&"+estado); 
+                            }
+                        }
+                        else{
+                            pw.println(msg+"&&"+IP_d+"&&"+IP_f+"&&"+nickf+"&&"+nickd+"&&"+mensaje+"&&"+estado);
                         }
 
-
+                    }
+                      
                 }
+                
                 br.close();
                 fr.close();
+                pw.close();
+                File fichero1 = new File("mensajes.txt");
+                fichero1.delete();
                 
+                File fichero2 = new File("temp.txt");
+                File fichero3 = new File("mensajes.txt");
+                fichero2.renameTo(fichero3);
             }
-            conn.sendMsg("END");
+            
+            
+        }
+        catch (FileNotFoundException ex) {
+            System.out.println("No se ha escrito ningun mensaje aún");
+            
+        }
+        catch(IOException e){
+            e.printStackTrace();
+        }
+        return mismensajes;
+        
+    }
+    public boolean ComprobarDatos(String Nick,String IP,String puerto)  throws IOException{
+        try{
+            FileReader fr = new FileReader ("nicks.txt");
+            BufferedReader br = new BufferedReader(fr);
+            String linea;
+            //Variables utilizadas para la separación del String
+            StringTokenizer aux1;
+            String aux2;
+            //Variables utilizadas para guardar campos.
+           
+            
+            while ((linea=br.readLine())!=null){
+                aux1=new StringTokenizer(linea,":");
+                aux2=aux1.nextToken();
+                aux1.nextToken();
+                if (aux2.equals(Nick) && aux1.nextToken().equals(IP) && aux1.nextToken().equals(puerto)){
+                    return true;    
+                }   
+            }
+            br.close();
+            fr.close();
+            return false;
+           
         }
         catch (FileNotFoundException ex) {
             System.out.println("No se ha escrito ningun mensaje aún");
             
         }
         
+        return false;
+        
+    }
+    public String obtenerIP(String Nick)throws IOException{
+        String ip="";
+            FileReader fr = new FileReader ("nicks.txt");
+            BufferedReader br = new BufferedReader(fr);
+            String linea;
+            //Variables utilizadas para la separación del String
+            StringTokenizer aux1;
+            String aux2;
+            //Variables utilizadas para guardar campos.
+           
+            
+            while ((linea=br.readLine())!=null){
+                aux1=new StringTokenizer(linea,":");
+                aux2=aux1.nextToken();
+                if (aux2.equals(Nick)){
+                    aux1.nextToken();
+                    br.close();
+                    fr.close();
+                    return aux1.nextToken();
+                }   
+            }
+       
+        return ip;
         
     }
     
-    public void EnviarACliente(String IP_destino,String IP_fuente,String Mensaje,String NickFuente){
-        conn.sendMsg("- "+NickFuente+"("+IP_fuente+"): "+ Mensaje);
+    public String ClienteSolicitaContactos(String Nick){
+        String contactos="FALLOCONTACTOS";
+        try{
+                
+                contactos="MISCONTACTOS ";
+                FileReader fr = new FileReader (Nick+".txt");
+                BufferedReader br = new BufferedReader(fr);
+                String linea;
+                
+                String ip="";
+                while ((linea=br.readLine())!=null){
+                    ip=obtenerIP(linea);
+                    contactos+=linea+":"+ip+"&&";
+                      
+                }
+                br.close();
+                fr.close(); 
+            
+            
+            
+        }
+        catch (FileNotFoundException ex) {
+            System.out.println("No se ha escrito ningun mensaje aún");
+            
+        }
+        catch(IOException e){
+            e.printStackTrace();
+        }
         
+        return contactos;
     }
+    
     
     public boolean NickesIP(String IP,String Nick) throws IOException{
         try{
@@ -175,6 +284,7 @@ class ChatServerProtocol {
             while ((linea=br.readLine())!=null){
                 aux1=new StringTokenizer(linea,":");
                 aux2=aux1.nextToken();
+                aux1.nextToken();
                 if (aux2.equals(Nick) && aux1.nextToken().equals(IP)){
                     return true;    
                 }   
@@ -223,6 +333,65 @@ class ChatServerProtocol {
         
         return true;
     }
+    
+    public boolean Login(String Nick,String Pass)throws IOException{
+        try{
+            FileReader fr = new FileReader ("nicks.txt");
+            BufferedReader br = new BufferedReader(fr);
+            String linea;
+            //Variables utilizadas para la separación del String
+            StringTokenizer aux1;
+            String aux2;
+            String aux3;
+            //Variables utilizadas para guardar campos.
+           
+            
+            while ((linea=br.readLine())!=null){
+                aux1=new StringTokenizer(linea,":");
+                aux2=aux1.nextToken();
+                aux3=aux1.nextToken();
+                if (aux2.equals(Nick) && aux3.equals(Pass) ){
+                    return true;    
+                }   
+            }
+            br.close();
+            fr.close();
+            return false;
+           
+        }
+        catch (FileNotFoundException ex) {
+            System.out.println("No se ha escrito ningun mensaje aún");
+            
+        }
+        return false;
+    }
+    
+    public boolean YaExisteContacto(String archivo,String Nick) throws IOException{
+        try{
+            FileReader fr = new FileReader (archivo+".txt");
+            BufferedReader br = new BufferedReader(fr);
+            String linea;
+            //Variables utilizadas para la separación del String
+            
+            //Variables utilizadas para guardar campos.
+           while ((linea=br.readLine())!=null){
+                
+                if (linea.equals(Nick) ){
+                    return true;    
+                }   
+            }
+            br.close();
+            fr.close();
+            return false;
+           
+        }
+        catch (FileNotFoundException ex) {
+            System.out.println("No se ha escrito ningun mensaje aún");
+            
+        }
+        return false;
+    
+    }
  
     /**
      * Process a message coming from the client
@@ -233,21 +402,21 @@ class ChatServerProtocol {
         String msg_type = msg_parts[0];
  
         if(msg_type.equals("MSG")) {
-            if(msg_parts.length < 6) return msg_INVALID;
+            if(msg_parts.length < 6) return "INVALIDO";
             if(msg_parts.length==6){
                 FileWriter archivoMensajes;
                 PrintWriter pw ;
                 archivoMensajes = new FileWriter("mensajes.txt",true);
                 pw = new PrintWriter(archivoMensajes);
-                pw.println(msg_parts[0]+"&&"+msg_parts[1]+"&&"+msg_parts[2]+"&&"+msg_parts[3]+"&&"+msg_parts[4]+"&&"+msg_parts[5]);
+                pw.println(msg_parts[0]+"&&"+msg_parts[1]+"&&"+msg_parts[2]+"&&"+msg_parts[3]+"&&"+msg_parts[4]+"&&"+msg_parts[5]+"&&"+"NO");
                 pw.close();
-                return msg_OK;
+                return "OKMSG";
             }
-            else return msg_SEND_FAILED;
+            else return "FALLOENVIO";
         } 
         else if(msg_type.equals("RETORNAR")){
-            ClienteSolicitaMensajes(msg_parts[1],msg_parts[2]);
-            return msg_OK;
+            return ClienteSolicitaMensajes(msg_parts[1],msg_parts[2]);
+            
         }
         else if(msg_type.equals("NICK")){
                 FileWriter archivoMensajes;
@@ -255,24 +424,79 @@ class ChatServerProtocol {
                 archivoMensajes = new FileWriter("nicks.txt",true);
                 pw = new PrintWriter(archivoMensajes);
                 if(RevisarNick(msg_parts[1])){
-                    pw.println(msg_parts[1]+":"+msg_parts[2]);
+                    pw.println(msg_parts[1]+":"+msg_parts[2] +":" +msg_parts[3]+ ":" + msg_parts[4] );
                     pw.close();
-                    conn.sendMsg("OK");
-                    conn.sendMsg("NICKEND");
-                    return msg_OK;
+                    return "NICKOK";
                     
                 }
                 else{
-                    conn.sendMsg("ENUSO");
                     pw.close();
-                    conn.sendMsg("NICKEND");
-                    return msg_NICK_IN_USE;
+                    return "NICKFALLO";
                 }
-                
-                       
         }
+        else if(msg_type.equals("LOGIN")){
+                
+            if(Login(msg_parts[1],msg_parts[2])){
+                return "LOGINOK";
+                    
+            }
+            else{
+                return "LOGINFALLO";
+            }
+        }
+        else if(msg_type.equals("AGREGAR")){
+            if(msg_parts.length < 5) return "INVALIDO";
+            if(msg_parts.length==5){
+                try{
+        
+                        String basePath = new File("").getAbsolutePath();
+                        File archivo = new File(basePath+ "/"+msg_parts[1]+".txt");
+                        if(archivo.exists()){
+                            //no hacer nada
+
+                        }
+                        else{
+                            //Si no existe, se crea uno nuevo
+                            FileWriter archivoMensajes ;
+                            PrintWriter pw ;
+
+                            archivoMensajes = new FileWriter(msg_parts[1]+".txt");
+                            pw = new PrintWriter(archivoMensajes);
+                            pw.close();
+                        }
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                FileWriter archivoMensajes;
+                PrintWriter pw ;
+                archivoMensajes = new FileWriter(msg_parts[1]+".txt",true);
+                
+                pw = new PrintWriter(archivoMensajes);
+                if(!YaExisteContacto(msg_parts[1],msg_parts[2])){
+                    if(ComprobarDatos(msg_parts[2],msg_parts[3],msg_parts[4])){
+                        pw.println(msg_parts[2]);
+                        pw.close();
+                        return "OKAGREGAR";
+                    }
+                    else{
+                        pw.close();
+                        return "NOEXISTE"; 
+                    }
+                }
+                else{
+                    pw.close();
+                    return "YAEXISTE";
+                }
+            }
+            else return "FALLOAGREGAR";
+        }
+        else if(msg_type.equals("MISCONTACTOS")){
+            return ClienteSolicitaContactos(msg_parts[1]);
+        }
+        
         else {
-            return msg_INVALID;
+            return "DESCONOCIDO";
         }
     }
 }
@@ -292,7 +516,7 @@ class ClientConn implements Runnable {
             out = new PrintWriter(client.getOutputStream(), true);
         } catch (IOException e) {
             System.err.println(e);
-            return;
+            
         }
     }
  
@@ -305,7 +529,9 @@ class ClientConn implements Runnable {
                 
                 System.out.println(msg);
                 response = protocol.ProcesarMensaje(msg);
-                out.println("SERVER: " + response);
+                System.out.println(response);
+                out.println(response);
+                
             }
         } catch (IOException e) {
             System.err.println(e);
