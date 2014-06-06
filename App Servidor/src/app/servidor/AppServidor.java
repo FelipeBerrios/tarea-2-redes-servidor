@@ -22,7 +22,7 @@ import java.util.StringTokenizer;
 
 public class AppServidor {
 
-    private static int port = 1001; /* port to listen on */
+    private static int port = 1001; /* puerto para escuchar peticiones*/
  
     public static void main (String[] args) throws IOException {
         
@@ -72,13 +72,13 @@ public class AppServidor {
         
         ServerSocket server = null;
         try {
-            server = new ServerSocket(port); /* start listening on the port */
+            server = new ServerSocket(port); /* Comienza a escuchar peticiones */
         } catch (IOException e) {
             System.err.println("Could not listen on port: " + port);
             System.err.println(e);
             System.exit(1);
         }
- 
+        /* Esperando peticiones del cliente*/
         Socket client = null;
         while(true) {
             try {
@@ -95,6 +95,7 @@ public class AppServidor {
     }
 }
 
+/*Protocolo de lectura para mensajes del cliente*/
 class ChatServerProtocol {
     private String nick;
     private ClientConn conn;
@@ -102,6 +103,8 @@ class ChatServerProtocol {
    public ChatServerProtocol(ClientConn c) {
     conn=c;
     }
+   
+   /*Metodo que devuelve mensajes del cliente si es que los tiene*/
     private String  ClienteSolicitaMensajes(String IP_enviar,String Nick) {
         String mismensajes="MISMSG ";
         try{
@@ -179,6 +182,8 @@ class ChatServerProtocol {
         return mismensajes;
         
     }
+    
+    /*comprueba ip y puerto asociado al nick*/
     public boolean ComprobarDatos(String Nick,String IP,String puerto)  throws IOException{
         try{
             FileReader fr = new FileReader ("nicks.txt");
@@ -211,6 +216,8 @@ class ChatServerProtocol {
         return false;
         
     }
+    
+    /*Obtiene ip de un determinado nick*/
     public String obtenerIP(String Nick)throws IOException{
         String ip="";
             FileReader fr = new FileReader ("nicks.txt");
@@ -236,7 +243,7 @@ class ChatServerProtocol {
         return ip;
         
     }
-    
+    /* retorna contactos del nick asociado al mensaje*/
     public String ClienteSolicitaContactos(String Nick){
         String contactos="FALLOCONTACTOS";
         try{
@@ -269,7 +276,7 @@ class ChatServerProtocol {
         return contactos;
     }
     
-    
+    /* retorna true si el nick asociado a la ip es correcto*/
     public boolean NickesIP(String IP,String Nick) throws IOException{
         try{
             FileReader fr = new FileReader ("nicks.txt");
@@ -303,6 +310,8 @@ class ChatServerProtocol {
         
         
     }
+    
+    /*Comprueba que el nick existe*/
     public boolean RevisarNick(String Nick) throws IOException{
         try{
             FileReader fr = new FileReader ("nicks.txt");
@@ -333,6 +342,7 @@ class ChatServerProtocol {
         
         return true;
     }
+    
     
     public boolean Login(String Nick,String Pass)throws IOException{
         try{
@@ -366,6 +376,7 @@ class ChatServerProtocol {
         return false;
     }
     
+    /*Verifica que el contacto no se duplique para el ciente*/
     public boolean YaExisteContacto(String archivo,String Nick) throws IOException{
         try{
             FileReader fr = new FileReader (archivo+".txt");
@@ -394,7 +405,7 @@ class ChatServerProtocol {
     }
  
     /**
-     * Process a message coming from the client
+     *Metodo principla para procesar mensajes, recibe instrucciones y parametros
      */
     public String ProcesarMensaje(String msg)throws IOException  {
  
@@ -501,6 +512,7 @@ class ChatServerProtocol {
     }
 }
  
+/*Clase para manipular al cliente*/
 class ClientConn implements Runnable {
     private Socket client;
     private BufferedReader in = null;
@@ -524,7 +536,7 @@ class ClientConn implements Runnable {
         String msg, response;
         ChatServerProtocol protocol = new ChatServerProtocol(this);
         try {
-            
+            /*Lee mensajes del servidor y responde*/
             while ((msg = in.readLine()) != null) {
                 
                 System.out.println(msg);
